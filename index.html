@@ -106,6 +106,19 @@ function ns(s){
   return (l.includes("conclu")||l.includes("resolv"))?"resolvido":"andamento";
 }
 
+function excelDateToStr(val) {
+  if (!val) return "";
+  const num = parseFloat(val);
+  if (!isNaN(num) && num > 40000) {
+    const date = new Date((num - 25569) * 86400000);
+    const dd = String(date.getUTCDate()).padStart(2,'0');
+    const mm = String(date.getUTCMonth()+1).padStart(2,'0');
+    const yyyy = date.getUTCFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+  return val;
+}
+
 function pdb(d){
   if(!d) return null;
   const [dd,mm,yyyy]=d.split("/");
