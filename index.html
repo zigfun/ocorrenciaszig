@@ -128,7 +128,7 @@ function pdb(d){
 function pRows(rows){
   return rows.filter(r=>r["Cliente"]||r["Descrição"]).map((r,i)=>({
     id:`${i}_${Date.now()}`,
-    client:r["Cliente"]||"", date:r["Data da ocorrência"]||"",
+    client:r["Cliente"]||"", date:excelDateToStr(r["Data da ocorrência"]||""),
     am:r["AM responsável"]||"", coord:r["Time"]||r["Coordenação"]||"",
     area:r["Área"]||"Geral", status:ns(r["Status"]),
     desc:r["Descrição"]||"", score:r["Pontuação"]||"",
