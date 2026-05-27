@@ -42,6 +42,20 @@ function excelDateToISO(val) {
 function mapRow(row, i) {
   const statusRaw = (row["Status"] || "").toLowerCase();
   const status = statusRaw.includes("conclu") ? "resolvido" : "andamento";
+
+  // Parse multiple attachment URLs (separated by newline or semicolon)
+  const attRaw = row["Prints/Audios/PDFs"] || row["Prints/Áudios/PDFs"] || "";
+  const attachments = attRaw
+    ? attRaw.split(/[\n;,]+/).map(s => s.trim()).filter(Boolean).map(url => {
+        const name = decodeURIComponent(url.split("/").pop().split("?")[0]) || "Arquivo";
+        const ext = name.split(".").pop().toLowerCase();
+        const type = ["jpg","jpeg","png","gif","webp"].includes(ext) ? "image"
+          : ["mp3","ogg","opus","m4a","aac","wav"].includes(ext) ? "audio"
+          : ext === "pdf" ? "pdf" : "file";
+        return { url, name, type };
+      })
+    : [];
+
   return {
     id: row["Id"] || row["ID"] || i,
     client:   row["Cliente"]           || "",
@@ -52,6 +66,7 @@ function mapRow(row, i) {
     status,
     desc:     row["Descrição"]         || row["Descricao"]      || "",
     registeredBy: row["Nome"] || "Forms",
+    attachments,
   };
 }
 
@@ -227,7 +242,12 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fb);-webkit-font-smo
 .tog.on{background:var(--ac);}
 .tog::after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:white;top:3px;left:3px;transition:left .15s;}
 .tog.on::after{left:15px;}
-.empty{text-align:center;padding:48px 20px;color:var(--mu);}
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;}
+.att-item{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;text-decoration:none;color:var(--tx);transition:all .15s;cursor:pointer;}
+.att-item:hover{border-color:var(--ac);background:var(--sf);}
+.att-item-ic{font-size:20px;flex-shrink:0;}
+.att-item-name{font-size:11px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.att-item-type{font-size:10px;color:var(--mu);margin-top:1px;}
 .empty-ic{font-size:36px;margin-bottom:10px;}
 .empty-t{font-size:13px;line-height:1.6;}
 ::-webkit-scrollbar{width:5px;}
@@ -642,6 +662,20 @@ function IncCard({ inc, onClick }) {
 
 function DetailModal({ inc, onClose }) {
   const ac=aColor(inc.category); const status=inc.status||"andamento";
+
+  function attIcon(type) {
+    if (type==="image") return "🖼️";
+    if (type==="audio") return "🎵";
+    if (type==="pdf")   return "📄";
+    return "📎";
+  }
+  function attLabel(type) {
+    if (type==="image") return "Imagem";
+    if (type==="audio") return "Áudio";
+    if (type==="pdf")   return "PDF";
+    return "Arquivo";
+  }
+
   return(
     <div className="ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -665,6 +699,22 @@ function DetailModal({ inc, onClose }) {
           <div className="det-sec">
             <div className="det-sec-lbl">Descrição</div>
             <div className="det-desc">{inc.desc}</div>
+          </div>
+        )}
+        {inc.attachments?.length>0&&(
+          <div className="det-sec">
+            <div className="det-sec-lbl">Anexos ({inc.attachments.length})</div>
+            <div className="att-grid">
+              {inc.attachments.map((att,i)=>(
+                <a key={i} className="att-item" href={att.url} target="_blank" rel="noopener noreferrer" title={att.name}>
+                  <div className="att-item-ic">{attIcon(att.type)}</div>
+                  <div>
+                    <div className="att-item-name">{att.name.length>22?att.name.slice(0,20)+"…":att.name}</div>
+                    <div className="att-item-type">{attLabel(att.type)} · Abrir ↗</div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         )}
         <div style={{display:"flex",justifyContent:"flex-end",paddingTop:"14px",borderTop:"1px solid var(--bd)"}}>
