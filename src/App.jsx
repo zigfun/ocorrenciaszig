@@ -46,7 +46,7 @@ function mapRow(row, i) {
   // Parse multiple attachment URLs (separated by newline or semicolon)
   const attRaw = row["Prints/Audios/PDFs"] || row["Prints/Áudios/PDFs"] || "";
   const attachments = attRaw
-    ? attRaw.split(/[\n;,]+/).map(s => s.trim()).filter(Boolean).map(url => {
+    ? attRaw.split(/;\s+|\n+/).map(s => s.trim()).filter(s => s.startsWith("http")).map(url => {
         const name = decodeURIComponent(url.split("/").pop().split("?")[0]) || "Arquivo";
         const ext = name.split(".").pop().toLowerCase();
         const type = ["jpg","jpeg","png","gif","webp"].includes(ext) ? "image"
