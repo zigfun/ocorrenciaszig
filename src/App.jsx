@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import * as XLSX from "xlsx";
 
-// ─── JSONBIN (só para usuários) ───────────────────────────────────
+// ─── CREDENCIAIS (fixas para todos os usuários) ───────────────────
+const FIXED_KEY = "$2a$10$qNAPL3qG9Q6ecS4yKo7Sm.IFi2M/meue8astJrVZZOD.rm.iGBUm.";
+const FIXED_BIN = "6a160e16f47d5c455c3aac9c";
 const JB = "https://api.jsonbin.io/v3";
 async function jbFetch(path, method = "GET", body = null, key) {
   const r = await fetch(`${JB}${path}`, {
@@ -256,8 +258,8 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fb);-webkit-font-smo
 `;
 
 export default function App() {
-  const [apiKey,  setApiKey]  = useState(() => localStorage.getItem("zg_key") || "");
-  const [binId,   setBinId]   = useState(() => localStorage.getItem("zg_bin") || "");
+  const [apiKey]  = useState(FIXED_KEY);
+  const [binId]   = useState(FIXED_BIN);
   const [session, setSession] = useState(() => { try { return JSON.parse(localStorage.getItem("zg_sess") || "null"); } catch { return null; } });
 
   const [incidents, setIncidents] = useState([]);
@@ -272,13 +274,6 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterMonth,  setFilterMonth]  = useState("");
 
-  const [sKey,  setSKey]  = useState("");
-  const [sName, setSName] = useState("");
-  const [sEmail,setSEmail]= useState("");
-  const [sPass, setSPass] = useState("");
-  const [sErr,  setSErr]  = useState("");
-  const [sLoad, setSLoad] = useState(false);
-
   const [lEmail, setLEmail] = useState("");
   const [lPass,  setLPass]  = useState("");
   const [lErr,   setLErr]   = useState("");
@@ -286,8 +281,7 @@ export default function App() {
   const [nu,   setNu]   = useState({ name:"", email:"", password:"", isAdmin:false });
   const [nuErr,setNuErr]= useState("");
 
-  const connected = !!(apiKey && binId);
-  const loggedIn  = !!(connected && session);
+  const loggedIn = !!session;
 
   const load = useCallback(async () => {
     if (!apiKey || !binId) return;
@@ -315,22 +309,6 @@ export default function App() {
     setSync("load");
     try { await writeBin(apiKey, binId, { users: nextUsers }); setSync("ok"); }
     catch { setSync("err"); }
-  };
-
-  const handleSetup = async () => {
-    if (!sKey.trim() || !sName.trim() || !sEmail.trim() || !sPass.trim()) { setSErr("Preencha todos os campos."); return; }
-    if (sPass.length < 6) { setSErr("Senha mínima de 6 caracteres."); return; }
-    setSLoad(true); setSErr("");
-    try {
-      const init = { users: [{ id:"u_"+Date.now(), name:sName.trim(), email:sEmail.toLowerCase().trim(), passwordHash:simpleHash(sPass.trim()), isAdmin:true }] };
-      const id = await createBin(sKey.trim(), init);
-      localStorage.setItem("zg_key", sKey.trim());
-      localStorage.setItem("zg_bin", id);
-      const sess = { id:init.users[0].id, name:init.users[0].name, email:init.users[0].email, isAdmin:true };
-      localStorage.setItem("zg_sess", JSON.stringify(sess));
-      setApiKey(sKey.trim()); setBinId(id); setSession(sess); setUsers(init.users);
-    } catch(e) { setSErr("Erro: " + (e.message || "verifique a API Key")); }
-    setSLoad(false);
   };
 
   const handleLogin = () => {
@@ -388,35 +366,6 @@ export default function App() {
     }
     return true;
   });
-
-  // SETUP
-  if (!connected) return (
-    <>
-      <style>{CSS}</style>
-      <div className="auth">
-        <div className="auth-card">
-          <div className="auth-brand"><div className="auth-ic">📋</div><div><div className="auth-name">Ocorrências ZIG</div><div className="auth-sub">Configuração inicial</div></div></div>
-          <div className="auth-title">Criar banco de dados</div>
-          <div className="auth-desc">Configure uma vez. Depois compartilhe o link com o time.</div>
-          <div className="steps">
-            <div className="sst"><div className="sst-n">1</div><div className="sst-t">Acesse <a href="https://jsonbin.io" target="_blank">jsonbin.io</a>, crie conta gratuita e vá em <strong>API Keys → Create API Key</strong>.</div></div>
-            <div className="sst"><div className="sst-n">2</div><div className="sst-t">Cole a API Key abaixo e preencha seus dados de admin.</div></div>
-          </div>
-          <label className="fl">API Key do JSONBin</label>
-          <input className="fi" placeholder="$2a$10$..." value={sKey} onChange={e=>setSKey(e.target.value)}/>
-          <div className="setup-grid" style={{marginTop:"12px"}}>
-            <div><label className="fl">Seu nome</label><input className="fi" placeholder="Talita" value={sName} onChange={e=>setSName(e.target.value)}/></div>
-            <div><label className="fl">Seu email</label><input className="fi" placeholder="email@zig.fun" value={sEmail} onChange={e=>setSEmail(e.target.value)}/></div>
-          </div>
-          <label className="fl">Senha (mínimo 6 caracteres)</label>
-          <input className="fi" type="password" placeholder="••••••" value={sPass} onChange={e=>setSPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSetup()}/>
-          {sErr && <div className="ferr">⚠ {sErr}</div>}
-          <button className="btn-main" onClick={handleSetup} disabled={sLoad}>{sLoad?"Criando...":"Criar e entrar →"}</button>
-          <div className="auth-note">Você será o administrador e poderá cadastrar o time depois.</div>
-        </div>
-      </div>
-    </>
-  );
 
   // LOGIN
   if (!loggedIn) return (
