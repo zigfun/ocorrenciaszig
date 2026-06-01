@@ -287,16 +287,24 @@ export default function App() {
     if (!apiKey || !binId) return;
     setSync("load");
     try {
-      // Carrega ocorrências do GitHub
       const ghData = await fetchGitHub();
       const raw = ghData.incidents || [];
       setIncidents(raw.map((r, i) => mapRow(r, i)));
-      // Carrega usuários do JSONBin
       const jbData = await readBin(apiKey, binId);
       setUsers(jbData.users || []);
       setSync("ok");
     } catch { setSync("err"); }
   }, [apiKey, binId]);
+
+  // Carrega usuários antes do login
+  useEffect(() => {
+    (async () => {
+      try {
+        const jbData = await readBin(apiKey, binId);
+        setUsers(jbData.users || []);
+      } catch {}
+    })();
+  }, []);
 
   useEffect(() => {
     if (!loggedIn) return;
